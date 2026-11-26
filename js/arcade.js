@@ -77,7 +77,7 @@ reg({
       },
       draw(c) {
         for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) if ((x + y) % 2) D.rect(c, x * S, y * S, S, S, '#12142a');
-        food.forEach(([x, y]) => D.text(c, '🍎', x * S + S / 2, y * S + S / 2 + 1, 16));
+        food.forEach(([x, y]) => D.glyph(c, 'diamond', x * S + S / 2, y * S + S / 2, 8, ACC));
         P.forEach((s, i) => s.b.forEach(([x, y], k) => D.rr(c, x * S + 1, y * S + 1, S - 2, S - 2, k ? 5 : 8, k ? COL[i] + (k % 2 ? 'cc' : 'ff') : '#fff', k ? null : COL[i], 3)));
         D.text(c, `${P[0].b.length}`, 30, 20, 18, COL[0]); D.text(c, `${P[1].b.length}`, 770, 20, 18, COL[1]);
       }
@@ -215,7 +215,7 @@ reg({
 /* ---------- Bomber ---------- */
 reg({
   id: 'bomber', name: 'Bomb Duel', cat: 'Arcade', icon: '💣', type: 'real', pad: 'dpad a', btn: { a: 'Bomb' },
-  desc: 'Blast blocks, trap your rival.', help: 'Move through the maze and drop bombs. Explosions blow up crates and chain other bombs. Crates may hide power-ups (🔥 range, 💣 more bombs). Catch your opponent in a blast!',
+  desc: 'Blast blocks, trap your rival.', help: 'Move through the maze and drop bombs. Explosions blow up crates and chain other bombs. Crates may hide power-ups (flame = range, bomb = more bombs). Catch your opponent in a blast!',
   make(A) {
     const C = 15, R = 11, S = 44, X0 = 70, Y0 = 8; const g = grid2(C, R, 0); // 0 empty 1 pillar 2 crate
     const items = grid2(C, R, 0), fire = grid2(C, R, 0), bombs = [];
@@ -254,12 +254,12 @@ reg({
           const x = X0 + i * S, y = Y0 + j * S;
           if (g[j][i] === 1) D.rr(c, x + 2, y + 2, S - 4, S - 4, 6, '#4a5080');
           else if (g[j][i] === 2) { D.rr(c, x + 3, y + 3, S - 6, S - 6, 4, '#a0703f'); D.line(c, x + 8, y + 8, x + S - 8, y + S - 8, '#7a522a', 3); }
-          else if (items[j][i]) D.text(c, items[j][i] === 1 ? '🔥' : '💣', x + S / 2, y + S / 2 + 2, 24);
+          else if (items[j][i]) { D.circ(c, x + S / 2, y + S / 2, 15, '#0006'); D.glyph(c, items[j][i] === 1 ? 'flame' : 'bomb', x + S / 2, y + S / 2, 10, items[j][i] === 1 ? '#ff9f43' : '#ecebe6'); }
           if (fire[j][i] > 0) D.rr(c, x + 2, y + 2, S - 4, S - 4, 10, `rgba(255,${120 + fire[j][i] * 200 | 0},60,.9)`);
         }
         bombs.forEach(b => { const x = X0 + (b.i + .5) * S, y = Y0 + (b.j + .5) * S, pl = 1 + Math.sin(b.t * 14) * .08; D.circ(c, x, y + 2, 15 * pl, '#111', COL[b.p], 3); D.circ(c, x + 6, y - 12, 3, b.t % .3 < .15 ? ACC : '#f80'); });
         P.forEach((q, p) => { if (q.dead) return; const x = X0 + (q.x + .5) * S, y = Y0 + (q.y + .5) * S; D.circ(c, x, y, 16, COL[p], '#fff', 3); D.circ(c, x - 5, y - 3, 3, '#fff'); D.circ(c, x + 5, y - 3, 3, '#fff'); });
-        for (let p = 0; p < 2; p++) D.text(c, `🔥${P[p].range} 💣${P[p].max}`, p ? 765 : 35, 250, 12, COL[p], 'center', 'middle', 700);
+        for (let p = 0; p < 2; p++) { const x = p ? 765 : 35; D.glyph(c, 'flame', x, 220, 7, COL[p]); D.text(c, P[p].range, x, 238, 12, COL[p]); D.glyph(c, 'bomb', x, 262, 7, COL[p]); D.text(c, P[p].max, x, 280, 12, COL[p]); }
       }
     };
   }
@@ -318,7 +318,7 @@ reg({
       },
       draw(c) {
         D.text(c, P[0].s, 40, 20, 28, COL[0]); D.text(c, P[1].s, 760, 20, 28, COL[1]); D.text(c, `⏱ ${Math.max(0, Math.ceil(T))}`, 400, 20, 22, T < 5 ? COL[0] : TXT);
-        coins.forEach(k => { const s = 1 + Math.sin(k.t * 6) * .1; k.v > 1 ? D.text(c, '💎', k.x, k.y, 26 * s) : D.circ(c, k.x, k.y, 10 * s, ACC, '#c99a2e', 3); });
+        coins.forEach(k => { const s = 1 + Math.sin(k.t * 6) * .1; k.v > 1 ? D.glyph(c, 'diamond', k.x, k.y, 13 * s, '#7fe3ff') : D.circ(c, k.x, k.y, 10 * s, ACC, '#c99a2e', 3); });
         P.forEach((q, p) => { D.circ(c, q.x, q.y + 3, q.r, '#0005'); D.circ(c, q.x, q.y, q.r, COL[p], q.cd > .9 ? '#fff' : null, 3); });
       }
     };
@@ -381,7 +381,7 @@ reg({
         const inn = P.map(q => dist(q.x, q.y, z.x, z.y) < z.r), own = inn[0] !== inn[1] ? (inn[0] ? 0 : 1) : -1;
         D.circ(c, zx, zy, 70, null, '#ffffff18', 2);
         D.glow(c, own >= 0 ? COL[own] : ACC, 30); D.circ(c, z.x, z.y, z.r, (own >= 0 ? COL[own] : ACC) + '33', own >= 0 ? COL[own] : ACC, 4); D.noglow(c);
-        D.text(c, '👑', z.x, z.y, 30);
+        D.glyph(c, 'crown', z.x, z.y, 14, own >= 0 ? COL[own] : ACC);
         for (let p = 0; p < 2; p++) { D.rr(c, p ? 450 : 50, 15, 300, 14, 7, BG2); D.rr(c, p ? 750 - 300 * s[p] / 10 : 50, 15, 300 * s[p] / 10, 14, 7, COL[p]); }
         P.forEach((q, p) => { D.circ(c, q.x, q.y + 3, q.r, '#0005'); D.circ(c, q.x, q.y, q.r, COL[p], q.cd > .8 ? '#fff' : null, 3); });
       }

@@ -121,7 +121,7 @@ reg({
   keys: ['<kbd>A</kbd> rock · <kbd>S</kbd> paper · <kbd>D</kbd> scissors', '<kbd>←</kbd> rock · <kbd>↓</kbd> paper · <kbd>→</kbd> scissors'],
   desc: 'Secret picks, simultaneous reveal.', help: 'Both players secretly lock in a pick (left = rock, down = paper, right = scissors). When both are locked, they reveal. First to 5.',
   make(A) {
-    const N = 5, sc = [0, 0], E = ['✊', '✋', '✌️'], K = { l: 0, d: 1, r: 2 }; let pick = [-1, -1], show = 0, res = '';
+    const N = 5, sc = [0, 0], E = ['Rock', 'Paper', 'Scissors'], EG = ['circle', 'square', 'cross'], K = { l: 0, d: 1, r: 2 }; let pick = [-1, -1], show = 0, res = '';
     return {
       update(dt) {
         if (show > 0) { show -= dt; if (show <= 0) { pick = [-1, -1]; res = ''; } return; }
@@ -136,7 +136,7 @@ reg({
         for (let p = 0; p < 2; p++) {
           const x = p ? 600 : 200;
           D.rr(c, x - 110, 130, 220, 220, 30, BG2, COL[p], 3);
-          if (show > 0) D.text(c, E[pick[p]], x, 245, 110);
+          if (show > 0) { D.glyph(c, EG[pick[p]], x, 222, 46, COL[p]); D.text(c, E[pick[p]], x, 310, 24, TXT); }
           else D.text(c, pick[p] >= 0 ? '✔ locked' : '…choosing', x, 240, 26, pick[p] >= 0 ? COL[p] : MUT);
           D.text(c, A.names[p], x, 380, 20, COL[p]);
         }
@@ -314,7 +314,7 @@ reg({
   id: 'snap', name: 'Snap!', cat: 'Party', icon: '🫰', type: 'real', pad: 'one', btn: { a: 'Snap' },
   desc: 'Slap when two match.', help: 'Cards flip one after another. Hit your button the moment a card matches the one before it. A false snap gives your opponent the point. First to 5.',
   make(A) {
-    const N = 5, sc = [0, 0], S = ['🍒', '🍋', '🍇', '🥝', '🍑', '🍌']; let prev = null, cur = pick(S), t = 1, claimed = false, msg = '', n = 0;
+    const N = 5, sc = [0, 0], S = ['circle|#ff4f6d', 'square|#ffd166', 'tri|#7bd389', 'diamond|#3ec5ff', 'star|#c56cf0', 'hex|#ff9f43']; let prev = null, cur = pick(S), t = 1, claimed = false, msg = '', n = 0;
     const next = () => { n++; prev = cur; cur = rand() < .3 ? prev : pick(S); t = Math.max(.6, 1.2 - n * .02); claimed = false; };
     return {
       update(dt) {
@@ -327,8 +327,9 @@ reg({
       },
       draw(c) {
         tally(c, A, sc, N);
-        if (prev) { D.rr(c, 230, 160, 140, 190, 18, BG2, LINE, 2); c.globalAlpha = .5; D.text(c, prev, 300, 258, 70); c.globalAlpha = 1; }
-        D.rr(c, 420, 150, 160, 210, 20, '#f2f2f7'); D.text(c, cur, 500, 258, 90);
+        const gl = (v, x, y, r) => { const [k, col] = v.split('|'); D.glyph(c, k, x, y, r, col); };
+        if (prev) { D.rr(c, 230, 160, 140, 190, 8, BG2, LINE, 1); c.globalAlpha = .45; gl(prev, 300, 255, 36); c.globalAlpha = 1; }
+        D.rr(c, 420, 150, 160, 210, 8, '#232328', TXT, 2); gl(cur, 500, 255, 48);
         D.text(c, msg, A.W / 2, 430, 26, ACC);
       }
     };

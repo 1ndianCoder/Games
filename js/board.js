@@ -440,7 +440,7 @@ reg({
   id: 'memory', name: 'Memory Match', cat: 'Board', icon: '🃏', type: 'turn', w: 640, h: 700,
   desc: 'Flip pairs, remember everything.', help: 'Flip two cards per turn. Find a matching pair to keep it and go again. Most pairs wins.',
   make(A) {
-    const E = shuffle(['🍕', '🚀', '🐙', '🌵', '🎸', '🦊', '🍩', '⚽', '🌈', '👑', '🐝', '🎲']), cards = shuffle([...E, ...E].map(e => ({ e, own: -1, up: 0 })));
+    const E = shuffle(['circle', 'square', 'tri', 'diamond', 'ring', 'star'].flatMap(k => [k + '|#ffd166', k + '|#7bd389'])), cards = shuffle([...E, ...E].map(e => ({ e, own: -1, up: 0 })));
     const B = mkBoard(A, 4, 6, 90, 20); let p = A.first, open = [], lock = 0, sc = [0, 0]; A.turn(p);
     return {
       update(dt) { if (lock > 0) { lock -= dt; if (lock <= 0) { open.forEach(k => cards[k].up = 0); open = []; p = 1 - p; A.turn(p); } } },
@@ -458,9 +458,10 @@ reg({
         D.text(c, sc[0], A.W / 2 - 40, 68, 22, COL[0]); D.text(c, sc[1], A.W / 2 + 40, 68, 22, COL[1]);
         cards.forEach((cd, i) => {
           const x = B.x0 + (i % 4) * B.cs + 5, y = B.y0 + Math.floor(i / 4) * B.cs + 5, s = B.cs - 10;
-          if (cd.own >= 0) { D.rr(c, x, y, s, s, 12, COL[cd.own] + '33', COL[cd.own], 2); D.text(c, cd.e, x + s / 2, y + s / 2 + 3, s * .5); }
-          else if (cd.up) { D.rr(c, x, y, s, s, 12, '#e9ecff'); D.text(c, cd.e, x + s / 2, y + s / 2 + 3, s * .5); }
-          else { D.rr(c, x, y, s, s, 12, BG2, LINE, 2); D.text(c, '?', x + s / 2, y + s / 2, s * .35, LINE); }
+          const [gk, gc] = cd.e.split('|');
+          if (cd.own >= 0) { D.rr(c, x, y, s, s, 6, COL[cd.own] + '22', COL[cd.own], 2); D.glyph(c, gk, x + s / 2, y + s / 2, s * .26, gc); }
+          else if (cd.up) { D.rr(c, x, y, s, s, 6, '#232328', TXT, 2); D.glyph(c, gk, x + s / 2, y + s / 2, s * .26, gc); }
+          else { D.rr(c, x, y, s, s, 6, BG2, LINE, 1); D.circ(c, x + s / 2, y + s / 2, 3, LINE); }
         });
       }
     };
@@ -625,7 +626,7 @@ reg({
       },
       draw(c) {
         banner(c, A, A.ended ? -1 : p, A.ended ? 'Minefield cleared' : null);
-        D.text(c, `💣 ${sc[0]}`, A.W / 2 - 60, 66, 18, COL[0]); D.text(c, `${sc[1]} 💣`, A.W / 2 + 60, 66, 18, COL[1]); D.text(c, `${M - sc[0] - sc[1]} left`, A.W / 2, 66, 13, MUT);
+        D.text(c, sc[0], A.W / 2 - 60, 66, 20, COL[0]); D.text(c, sc[1], A.W / 2 + 60, 66, 20, COL[1]); D.text(c, `${M - sc[0] - sc[1]} left`, A.W / 2, 66, 13, MUT);
         for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
           const x = B.x0 + i * B.cs, y = B.y0 + j * B.cs, r = rev[j][i];
           if (r < 0) D.rr(c, x + 1.5, y + 1.5, B.cs - 3, B.cs - 3, 5, '#2f3560');
@@ -649,7 +650,7 @@ reg({
       move(x, y) { hov = B.at(x, y); },
       down(x, y) {
         const k = B.at(x, y); if (!k || !g[k[1]][k[0]]) return;
-        if (k[0] === 0 && k[1] === 0) { g[0][0] = 0; A.sfx('bad'); return A.end(1 - p, `${A.names[p]} ate the poison ☠`); }
+        if (k[0] === 0 && k[1] === 0) { g[0][0] = 0; A.sfx('bad'); return A.end(1 - p, `${A.names[p]} ate the poison`); }
         for (let j = k[1]; j < R; j++) for (let i = k[0]; i < C; i++) g[j][i] = 0; A.sfx('place');
         p = 1 - p; A.turn(p);
       },
@@ -659,7 +660,7 @@ reg({
           if (!g[j][i]) continue; const x = B.x0 + i * B.cs, y = B.y0 + j * B.cs;
           const sel = hov && !A.ended && i >= hov[0] && j >= hov[1] && g[hov[1]][hov[0]];
           D.rr(c, x + 3, y + 3, B.cs - 6, B.cs - 6, 8, sel ? COL[p] : '#7b4a2e'); D.rr(c, x + 10, y + 10, B.cs - 20, B.cs - 20, 6, sel ? '#ffffff33' : '#8f5a3a');
-          if (!i && !j) D.text(c, '☠', x + B.cs / 2, y + B.cs / 2 + 2, B.cs * .45, '#b8ff6a');
+          if (!i && !j) D.glyph(c, 'cross', x + B.cs / 2, y + B.cs / 2, B.cs * .22, '#b8ff6a');
         }
       }
     };
