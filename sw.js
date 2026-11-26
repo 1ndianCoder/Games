@@ -1,7 +1,7 @@
 /* Duo service worker: works offline, stays fresh when online.
    - Page (navigation): network first with a short timeout, cached copy when offline.
    - Everything else: served from cache instantly, refreshed in the background. */
-const VERSION = 'duo-v5';
+const VERSION = 'duo-v6';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/core.js', 'js/sports.js', 'js/arcade.js', 'js/party.js', 'js/board.js',

@@ -210,3 +210,22 @@ kbd{font-family:var(--body);font-weight:800;font-size:12px;background:var(--card
 @media (display-mode:standalone),(display-mode:fullscreen){ #foot{display:none} }
 .tip{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;color:var(--acc);font-size:13px;font-weight:800}
 .tip svg{width:22px;height:22px;flex:none}
+
+/* ================= SCROLL WHEEL PICKER ================= */
+.wheel{position:relative;height:150px;width:min(300px,100%);margin:0 auto;perspective:460px;border-radius:24px;background:var(--bg2);overflow:hidden}
+.wheel::before,.wheel::after{content:"";position:absolute;left:0;right:0;height:26px;z-index:2;pointer-events:none}
+.wheel::before{top:0;background:linear-gradient(var(--bg2),transparent)}
+.wheel::after{bottom:0;background:linear-gradient(transparent,var(--bg2))}
+.wheel-sel{position:absolute;left:8px;right:8px;top:50%;height:46px;margin-top:-23px;border-radius:16px;background:#ffffff10;box-shadow:inset 0 0 0 2px #ffffff16;pointer-events:none}
+.wheel-scroll{position:relative;height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;outline:none;touch-action:pan-y}
+.wheel-scroll::-webkit-scrollbar{display:none}
+.wheel-pad{height:52px}
+.wheel-item{height:46px;scroll-snap-align:center;scroll-snap-stop:always;cursor:pointer;perspective:460px}
+.wheel-face{display:flex;align-items:baseline;justify-content:center;gap:10px;height:100%;padding-top:9px;will-change:transform,opacity;transform-origin:50% 50%;pointer-events:none}
+.wheel-item b{font-family:var(--round);font-weight:600;font-size:24px;line-height:1;color:var(--mut);transition:color .15s}
+.wheel-item small{font-size:12px;font-weight:800;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.wheel-item.on b{color:var(--ink)}
+.wheel-item.on[data-v="-1"] b{color:var(--p2)}.wheel-item.on[data-v="0"] b{color:#7bd389}.wheel-item.on[data-v="1"] b{color:var(--acc)}.wheel-item.on[data-v="2"] b{color:var(--p1)}
+.wheel-lab{margin:14px 0 8px}
+#opp{flex:1;max-width:300px}
+.panel .how{margin-top:12px}

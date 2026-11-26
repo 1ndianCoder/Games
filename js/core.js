@@ -225,6 +225,39 @@ const Search = {
   },
 };
 
+/* ---------- scroll wheel picker (iOS-style drum) ---------- */
+function Wheel(host, items, value, onChange) {
+  const IH = 46;
+  host.innerHTML = `<div class="wheel"><div class="wheel-sel"></div><div class="wheel-scroll"><div class="wheel-pad"></div>${items.map(it => `<div class="wheel-item" data-v="${it.v}"><span class="wheel-face"><b>${it.label}</b><small>${it.sub}</small></span></div>`).join('')}<div class="wheel-pad"></div></div></div>`;
+  const sc = host.querySelector('.wheel-scroll'), els = [...sc.querySelectorAll('.wheel-item')], faces = els.map(e => e.firstChild);
+  let cur = Math.max(0, items.findIndex(i => i.v === value)), raf = 0, settle = 0, ready = false;
+  const paint = () => {
+    raf = 0; const mid = sc.scrollTop / IH;
+    els.forEach((el, i) => {
+      const a = clamp(i - mid, -2.5, 2.5);
+      faces[i].style.transform = `translateY(${-a * 4}px) rotateX(${-a * 34}deg) scale(${1 - Math.abs(a) * .1})`;
+      faces[i].style.opacity = Math.max(0, 1 - Math.abs(a) * .5);
+      el.classList.toggle('on', Math.round(mid) === i);
+    });
+    const idx = clamp(Math.round(mid), 0, items.length - 1);
+    if (idx !== cur && ready) {
+      cur = idx; Snd.init(); Snd.tone(1500, .012, 'sine', .035);
+      try { navigator.vibrate && navigator.vibrate(5); } catch (e) { }
+      onChange(items[cur].v, false);
+    }
+  };
+  sc.addEventListener('scroll', () => {
+    if (!raf) raf = requestAnimationFrame(paint);
+    clearTimeout(settle); settle = setTimeout(() => { if (ready) onChange(items[cur].v, true); }, 160);
+  }, { passive: true });
+  els.forEach((el, i) => el.addEventListener('click', () => sc.scrollTo({ top: i * IH, behavior: 'smooth' })));
+  host.addEventListener('keydown', e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); const i = clamp(cur + (e.key === 'ArrowDown' ? 1 : -1), 0, items.length - 1); sc.scrollTo({ top: i * IH, behavior: 'smooth' }); } });
+  sc.tabIndex = 0;
+  requestAnimationFrame(() => { sc.scrollTop = cur * IH; paint(); setTimeout(() => { ready = true; }, 60); });
+  return { set(v) { const i = items.findIndex(x => x.v === v); if (i >= 0 && i !== cur) { cur = i; sc.scrollTo({ top: i * IH, behavior: 'smooth' }); } } };
+}
+const OPP_ITEMS = [{ v: -1, label: 'Friend', sub: '2 players' }, { v: 0, label: 'Easy', sub: 'chill bot' }, { v: 1, label: 'Medium', sub: 'fair fight' }, { v: 2, label: 'Hard', sub: 'no mercy' }];
+
 /* ---------- storage ---------- */
 const Store = {
   get(k, d) { try { const v = localStorage.getItem('duo_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -264,7 +297,7 @@ const Duo = (() => {
   function renderMenu() {
     previews.stopAll();
     $('gcount').textContent = GAMES.length;
-    $('opp').innerHTML = [['Friend', -1], ...LEVELS.map((l, i) => [l, i])].map(([l, v]) => `<button class="${v === opp ? 'on' : ''}" data-v="${v}">${v < 0 ? '<svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c.8-3 2.8-4.5 5-4.5s4.2 1.5 5 4.5M11 19c.8-3 2.8-4.5 5-4.5s4.2 1.5 5 4.5"/></svg>' : `<i>${'●'.repeat(v + 1)}${'○'.repeat(2 - v)}</i>`}${l}</button>`).join('');
+    if (menuWheel) menuWheel.set(opp);
     $('n2').disabled = opp >= 0; $('n2').value = opp >= 0 ? 'Bot' : names[1];
     $('lab2').textContent = opp >= 0 ? `Bot · ${LEVELS[opp]}` : (isTouch ? 'Player two' : 'Player two · arrows');
     $('lab1').textContent = isTouch ? 'Player one' : 'Player one · WASD';
@@ -422,11 +455,17 @@ const Duo = (() => {
     if (bots[1]) return `<div class="how"><span>${def.keys ? def.keys[0] : k(0)}</span><span class="dim">Arrow keys and Enter work too.</span></div>`;
     return `<div class="how two"><span class="p1"><b>${N[0]}</b>${def.keys ? def.keys[0] : k(0)}</span><span class="p2"><b>${N[1]}</b>${def.keys ? def.keys[1] : k(1)}</span></div>`;
   }
-  const vsLine = () => bots[1] ? `<div class="vs-chip">vs Bot · ${LEVELS[bots[1].lvl]}</div>` : '';
+  let menuWheel = null;
+  function setOpp(v) {
+    opp = v; Store.set('opp', v); loadStats();
+    if (phase === 'menu') renderMenu();
+    else if (def && A && !A.ended && phase === 'overlay' && $('introWheel')) { newRound(); const h = $('introHow'); if (h) h.innerHTML = controlsHtml(); }
+  }
   const turnTip = () => isTouch && !rot && W / H > 1.25 && innerHeight > innerWidth ? `<div class="tip"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><path d="M20 14a8 8 0 0 1-6 6M17 20h-3v-3"/></svg>Turn your phone sideways for a bigger view</div>` : '';
   function showIntro() {
-    overlay(`<div class="kick">${party ? `Party · ${party.i + 1} of ${party.list.length}` : def.cat}</div><h2>${def.name}</h2>${vsLine()}<p>${def.help}</p>${controlsHtml()}${turnTip()}
+    overlay(`<div class="kick">${party ? `Party · ${party.i + 1} of ${party.list.length}` : def.cat}</div><h2>${def.name}</h2><p>${def.help}</p>${forceBots ? '' : '<div class="lab wheel-lab">Play against</div><div id="introWheel"></div>'}<div id="introHow">${controlsHtml()}</div>${turnTip()}
       <div class="row"><button class="btn" data-a="start">Play</button><button class="btn ghost" data-a="menu">Back</button></div>`);
+    if (!forceBots) Wheel($('introWheel'), OPP_ITEMS, opp, (v, final) => { if (final && v !== opp) setOpp(v); });
   }
   function showPause() {
     if (phase !== 'play' || !def) return;
@@ -653,7 +692,7 @@ const Duo = (() => {
     $('n1').value = names[0]; $('n2').value = names[1];
     const saveNames = () => { names = [$('n1').value.trim() || 'Red', opp >= 0 ? names[1] : ($('n2').value.trim() || 'Blue')]; Store.set('names', names); renderMenu(); };
     $('n1').onchange = saveNames; $('n2').onchange = saveNames;
-    $('opp').onclick = e => { const b = e.target.closest('button'); if (!b) return; opp = +b.dataset.v; Store.set('opp', opp); loadStats(); renderMenu(); };
+    menuWheel = Wheel($('opp'), OPP_ITEMS, opp, (v, final) => { if (final && v !== opp) setOpp(v); });
     $('cats').onclick = e => { const b = e.target.closest('button'); if (b) { cat = b.dataset.c; renderMenu(); } };
     $('search').oninput = renderMenu;
     $('grid').onclick = e => { const b = e.target.closest('.tile'); if (b) { Snd.init(); party = null; open(b.dataset.id); } };
