@@ -3,60 +3,54 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0c0c0e">
+<meta name="theme-color" content="#14141f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Duo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div class="blobs" aria-hidden="true"><i></i><i></i><i></i></div>
+
 <!-- MENU -->
 <section id="menu">
   <header class="mast">
-    <div class="brand"><span class="word">Duo</span><span class="mono tagline">Two players. One screen. <span id="gcount"></span> games.</span></div>
-    <button id="muteMenu" class="link mono" type="button"></button>
+    <div class="brand"><span class="word">duo</span><span class="tagline"><span id="gcount"></span> games for two</span></div>
+    <button id="muteMenu" class="round-btn" type="button" aria-label="Sound"></button>
   </header>
 
-  <section class="versus" aria-label="Players">
-    <label class="pl p1"><span class="mono lab">Player one · WASD</span><input id="n1" maxlength="12" spellcheck="false" autocomplete="off"></label>
+  <section class="versus card" aria-label="Players">
+    <label class="pl p1"><span class="lab" id="lab1">Player one</span><input id="n1" maxlength="12" spellcheck="false" autocomplete="off"></label>
     <div class="h2h">
-      <div class="mono lab">Head to head</div>
       <div class="rec"><span id="r1" class="p1">0</span><span class="dash"></span><span id="r2" class="p2">0</span></div>
       <div class="h2bar"><i id="b1"></i><i id="b2"></i></div>
-      <div class="mono lab" id="nplayed"></div>
+      <div class="lab" id="nplayed"></div>
     </div>
-    <label class="pl p2"><span class="mono lab">Player two · Arrows</span><input id="n2" maxlength="12" spellcheck="false" autocomplete="off"></label>
+    <label class="pl p2"><span class="lab" id="lab2">Player two</span><input id="n2" maxlength="12" spellcheck="false" autocomplete="off"></label>
+    <div class="opp-wrap"><span class="lab">Play against</span><div id="opp" class="seg" role="group" aria-label="Opponent"></div></div>
   </section>
 
   <div class="actions">
-    <button id="partyBtn" class="act primary" type="button"><span class="t">Party</span><span class="mono s">Five random games. Most wins takes it.</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-    <button id="randomBtn" class="act" type="button"><span class="t">Shuffle</span><span class="mono s">Drop into anything.</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l10 10h3M4 17h3l3-3M14 10l3-3h3M17 4l3 3-3 3M17 14l3 3-3 3"/></svg></button>
+    <button id="partyBtn" class="act primary" type="button"><span class="t">Party</span><span class="s">5 random games</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <button id="randomBtn" class="act" type="button"><span class="t">Shuffle</span><span class="s">any game</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l10 10h3M4 17h3l3-3M14 10l3-3h3M17 4l3 3-3 3M17 14l3 3-3 3"/></svg></button>
   </div>
 
   <div class="toolbar">
     <nav id="cats" aria-label="Categories"></nav>
-    <input id="search" class="mono" placeholder="Search" autocomplete="off" spellcheck="false">
+    <input id="search" placeholder="Search" autocomplete="off" spellcheck="false">
   </div>
   <div id="grid"></div>
-  <footer id="foot" class="mono"></footer>
+  <footer id="foot"></footer>
 </section>
 
 <!-- GAME -->
 <section id="game" hidden>
-  <header class="bar">
-    <button id="backBtn" class="icon" title="Menu" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <div id="gTitle"></div>
-    <div id="score"><span class="s1"><b id="sn1"></b> <i id="ss1">0</i></span><span class="colon">:</span><span class="s2"><i id="ss2">0</i> <b id="sn2"></b></span></div>
-    <div class="tools">
-      <button id="restartBtn" class="icon" title="Restart round" aria-label="Restart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg></button>
-      <button id="helpBtn" class="icon" title="Pause / rules" aria-label="Pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg></button>
-      <button id="muteBtn" class="icon" title="Sound" aria-label="Sound"></button>
-    </div>
-  </header>
   <div id="stage">
     <canvas id="cv"></canvas>
-    <div id="pads"></div>
+    <button id="pauseBtn" class="fbtn" type="button" aria-label="Pause"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></button>
     <div id="overlay" hidden></div>
   </div>
 </section>
