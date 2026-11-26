@@ -102,7 +102,7 @@ function roll(o, h, k, c0) { const sp = Math.hypot(o.vx, o.vy); if (!sp) return;
 
 /* ---------- Pong ---------- */
 reg({
-  id: 'pong', name: 'Pong', cat: 'Sports', icon: '🏓', type: 'real', pad: 'ud', touch: 'point',
+  id: 'pong', rot: true, name: 'Pong', cat: 'Sports', icon: '🏓', type: 'real', pad: 'ud', touch: 'point',
   desc: 'The original paddle duel.', help: 'Move your paddle up and down. Hit near the paddle edge for sharper angles. The ball speeds up every hit. First to 7.',
   make(A) {
     const N = 7, sc = [0, 0], P = [{ y: 250, vy: 0 }, { y: 250, vy: 0 }], PH = 96; let b, wait = .8, msg = '', mt = 0;
@@ -158,7 +158,7 @@ reg({
 
 /* ---------- Tennis ---------- */
 reg({
-  id: 'tennis', name: 'Tennis', cat: 'Sports', icon: '🎾', type: 'real', pad: 'dpad a', btn: { a: 'Smash' },
+  id: 'tennis', rot: true, name: 'Tennis', cat: 'Sports', icon: '🎾', type: 'real', pad: 'dpad a', btn: { a: 'Smash' },
   desc: 'Top-down tennis with real bounces.', help: 'Run to the ball — you swing automatically when it is in reach. Push up/down while hitting to aim. Hold the action (or a second finger) for a fast smash. The ball must land in the court on the other side. First to 7, win by 2.',
   make(A) {
     const CX0 = 70, CX1 = 730, CY0 = 110, CY1 = 410, NET = 400, G = 900;
@@ -317,7 +317,7 @@ reg({
 
 /* ---------- Soccer ---------- */
 reg({
-  id: 'soccer', name: 'Soccer', cat: 'Sports', icon: '⚽', type: 'real', pad: 'dpad a', btn: { a: 'Kick' },
+  id: 'soccer', rot: true, name: 'Soccer', cat: 'Sports', icon: '⚽', type: 'real', pad: 'dpad a', btn: { a: 'Kick' },
   desc: 'Top-down 1v1 football.', help: 'Dribble by running into the ball, kick when you are next to it. Score in the opponent\'s goal. First to 5.',
   make(A) {
     const L = 40, R = 760, T = 40, B = 460, GT = 185, GB = 315, sc = [0, 0];
@@ -391,7 +391,7 @@ reg({
 
 /* ---------- Air Hockey ---------- */
 reg({
-  id: 'airhockey', name: 'Air Hockey', cat: 'Sports', icon: '🏒', type: 'real', pad: 'dpad', touch: 'point',
+  id: 'airhockey', rot: true, name: 'Air Hockey', cat: 'Sports', icon: '🏒', type: 'real', pad: 'dpad', touch: 'point',
   desc: 'Slam the puck, guard your goal.', help: 'Move your mallet in your half and smash the puck into the opposite goal. First to 7.',
   make(A) {
     const sc = [0, 0], GT = 170, GB = 330; let M, pk, msg = '', mt = 0, pause = 0, stall = 0;
@@ -465,7 +465,7 @@ reg({
 
 /* ---------- Mini Golf ---------- */
 reg({
-  id: 'golf', name: 'Mini Golf', cat: 'Sports', icon: '⛳', type: 'turn', long: true,
+  id: 'golf', rot: true, name: 'Mini Golf', cat: 'Sports', icon: '⛳', type: 'turn', long: true,
   desc: '5 holes. Fewest strokes wins.', help: 'Pull back anywhere and release to putt, like a slingshot. Players alternate shots. Lowest total over 5 holes wins. Max 8 strokes per hole.',
   make(A) {
     const HOLES = [
@@ -661,7 +661,7 @@ reg({
 
 /* ---------- Curling ---------- */
 reg({
-  id: 'curling', name: 'Curling', cat: 'Sports', icon: '🥌', type: 'turn',
+  id: 'curling', rot: true, name: 'Curling', cat: 'Sports', icon: '🥌', type: 'turn',
   desc: 'Slide stones closest to the button.', help: 'Pull back and release to slide your stone. 4 stones each, alternating. Knock opponents out! After all 8, whoever has the stone closest to the center wins the end.',
   make(A) {
     const HX = 640, HY = 250, stones = []; let p = A.first, thrown = [0, 0], cur = null, moving = false; const sl = Sling(160); A.turn(p);
@@ -788,7 +788,7 @@ reg({
 
 /* ---------- Pool ---------- */
 reg({
-  id: 'pool', name: 'Pool', cat: 'Sports', icon: '🎱', type: 'turn', long: true,
+  id: 'pool', rot: true, name: 'Pool', cat: 'Sports', icon: '🎱', type: 'turn', long: true,
   desc: 'Pot your five before they do.', help: 'Pull back and release to strike the white ball. Red pots red balls, Blue pots blue. Pot your own color to shoot again. Potting the white passes the turn. First to pot all 5 wins.',
   make(A) {
     const L = 60, R = 740, T = 60, B = 440, pockets = [[L, T], [400, T - 6], [R, T], [L, B], [400, B + 6], [R, B]];
@@ -879,7 +879,7 @@ reg({
 
 /* ---------- Sumo ---------- */
 reg({
-  id: 'sumo', name: 'Sumo', cat: 'Sports', icon: '🤼', type: 'real', pad: 'dpad a', btn: { a: 'Dash' },
+  id: 'sumo', rot: true, name: 'Sumo', cat: 'Sports', icon: '🤼', type: 'real', pad: 'dpad a', btn: { a: 'Dash' },
   desc: 'Shove your rival out of the ring.', help: 'Push your opponent out of the ring. Dash (short cooldown) to body-slam. First to 3 rounds.',
   make(A) {
     const sc = [0, 0], C = [400, 265], R = 200; let P, msg = '', mt = 0, pause = 0;
@@ -929,7 +929,7 @@ reg({
 
 /* ---------- Racer ---------- */
 reg({
-  id: 'racer', name: 'Racer', cat: 'Sports', icon: '🏎️', type: 'real', pad: 'dpad', w: 800, h: 520,
+  id: 'racer', rot: true, name: 'Racer', cat: 'Sports', icon: '🏎️', type: 'real', pad: 'dpad', w: 800, h: 520,
   touchHint: 'point where you want to drive',
   desc: '3 laps. Grass is slow.', help: 'Keys: up = gas, down = brake, left/right = steer. Touch: drag in the direction you want to drive. Stay on the track — grass is slow. First to finish 3 laps wins.',
   make(A) {

@@ -1,3 +1,5 @@
+@font-face{font-family:"Fredoka";src:url(../fonts/fredoka.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"Nunito";src:url(../fonts/nunito.woff2) format("woff2");font-weight:200 1000;font-display:swap}
 :root{
   --bg:#14141f;--bg2:#1c1c2b;--card:#1f1f30;--card2:#262639;--line:#30304a;--line2:#3f3f5c;
   --ink:#f4f2ff;--mut:#9c9ab8;--dim:#66658a;
@@ -7,7 +9,11 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:700;
-  overscroll-behavior:none;-webkit-font-smoothing:antialiased}
+  overscroll-behavior:none;-webkit-font-smoothing:antialiased;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%}
+input{-webkit-user-select:text;user-select:text}
+/* status-bar backdrop so scrolled content never sits under the notch / clock */
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:var(--bg);z-index:20}
 body.ingame{overflow:hidden;position:fixed;inset:0}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
 input{font:inherit;color:inherit}
@@ -27,7 +33,13 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke
 body.ingame .blobs{display:none}
 
 /* ================= MENU ================= */
-#menu{max-width:1180px;margin:0 auto;padding:22px 24px 64px}
+#menu{max-width:1180px;margin:0 auto;padding:max(22px,calc(env(safe-area-inset-top) + 10px)) max(24px,env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
+.mast-r{display:flex;align-items:center;gap:8px}
+.pill-btn{padding:10px 16px;border-radius:999px;background:var(--p2);color:#06222e;font-weight:900;font-size:14px}
+.ios-hint{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:30;display:flex;align-items:center;gap:10px;
+  padding:14px 16px;border-radius:22px;background:var(--card2);box-shadow:0 20px 40px -10px #000c;font-size:14px;line-height:1.4;animation:pop .35s}
+.ios-hint span{flex:1}.ios-hint b{color:var(--p2)}
+.ios-hint button{width:34px;height:34px;border-radius:50%;background:#ffffff14;font-size:14px}
 .mast{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
 .brand{display:flex;align-items:center;gap:14px}
 .word{font-family:var(--round);font-weight:700;font-size:58px;line-height:.9;letter-spacing:-.02em;display:flex;align-items:center}
@@ -77,14 +89,14 @@ body.ingame .blobs{display:none}
 .act.primary svg{background:#ffffff33}
 
 /* toolbar */
-.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;position:sticky;top:0;z-index:4;
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;position:sticky;top:env(safe-area-inset-top);z-index:4;
   background:linear-gradient(var(--bg) 75%,#14141f00)}
 #cats{display:flex;gap:6px;flex-wrap:wrap}
 #cats button{font-size:15px;font-weight:800;color:var(--mut);padding:9px 16px;border-radius:999px;background:var(--card);transition:background .2s,color .2s}
 #cats button sup{opacity:.6;margin-left:4px;font-size:11px}
 #cats button:hover{color:var(--ink)}
 #cats button.on{color:var(--bg);background:var(--ink)}
-#search{background:var(--card);border:0;border-radius:999px;padding:11px 18px;width:210px;outline:none;font-size:15px;font-weight:700}
+#search{background:var(--card);border:0;border-radius:999px;padding:11px 18px;width:210px;outline:none;font-size:16px;font-weight:700}
 #search::placeholder{color:var(--dim)}
 #search:focus{box-shadow:0 0 0 2px var(--p2)}
 
@@ -184,3 +196,17 @@ kbd{font-family:var(--body);font-weight:800;font-size:12px;background:var(--card
   .how{margin:8px 0 2px;padding:8px 12px;font-size:13px}.panel .row{margin-top:10px}.btn{padding:10px 22px;font-size:17px}
   .tally{font-size:36px;margin:6px 0 2px}
 }
+
+/* ================= TOUCH: real press feedback, no sticky hover ================= */
+@media (hover:none){
+  .tile:hover{transform:none;background:var(--card)}
+  .act:hover{transform:none}.act:hover svg{transform:none}
+  .btn:hover{transform:none}.round-btn:hover{transform:none}
+  .tile:hover .thumb canvas{transform:none}
+}
+.tile,.act,.btn,.round-btn,.seg button,#cats button,.pill-btn,.fbtn{transition:transform .12s ease,background .2s,color .2s}
+.tile:active{transform:scale(.97)}.act:active{transform:scale(.97)}.btn:active{transform:scale(.95)}
+.round-btn:active,.fbtn:active,.seg button:active,#cats button:active,.pill-btn:active{transform:scale(.92)}
+@media (display-mode:standalone),(display-mode:fullscreen){ #foot{display:none} }
+.tip{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;color:var(--acc);font-size:13px;font-weight:800}
+.tip svg{width:22px;height:22px;flex:none}

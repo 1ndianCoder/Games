@@ -6,10 +6,17 @@
 <meta name="theme-color" content="#14141f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Duo">
+<meta name="application-name" content="Duo">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="57 quick games for two players on one phone, or against a bot.">
 <title>Duo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -19,7 +26,7 @@
 <section id="menu">
   <header class="mast">
     <div class="brand"><span class="word">duo</span><span class="tagline"><span id="gcount"></span> games for two</span></div>
-    <button id="muteMenu" class="round-btn" type="button" aria-label="Sound"></button>
+    <div class="mast-r"><button id="installBtn" class="pill-btn" type="button" hidden>Install app</button><button id="muteMenu" class="round-btn" type="button" aria-label="Sound"></button></div>
   </header>
 
   <section class="versus card" aria-label="Players">
@@ -44,6 +51,7 @@
   </div>
   <div id="grid"></div>
   <footer id="foot"></footer>
+  <div id="iosHint" class="ios-hint" hidden><span>Install Duo: tap <b>Share</b> then <b>Add to Home Screen</b>.</span><button type="button" aria-label="Dismiss">✕</button></div>
 </section>
 
 <!-- GAME -->

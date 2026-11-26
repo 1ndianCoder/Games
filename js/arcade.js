@@ -19,7 +19,7 @@ function flood(free, x, y, cap, W, H) {
 
 /* ---------- Light Cycles ---------- */
 reg({
-  id: 'cycles', name: 'Light Cycles', cat: 'Arcade', icon: '🏍️', type: 'real', pad: 'dpad', touchHint: 'swipe to turn',
+  id: 'cycles', rot: true, name: 'Light Cycles', cat: 'Arcade', icon: '🏍️', type: 'real', pad: 'dpad', touchHint: 'swipe to turn',
   desc: 'Leave a wall. Box them in.', help: 'You never stop moving and leave a solid trail. Turn to trap your opponent — crash into any wall or trail and you lose the round. First to 3.',
   make(A) {
     const CW = 80, CH = 50, S = 10, sc = [0, 0]; let g, P, t, msg = '', pause = 0, n = 0;
@@ -76,7 +76,7 @@ reg({
 
 /* ---------- Snake Duel ---------- */
 reg({
-  id: 'snake', name: 'Snake Duel', cat: 'Arcade', icon: '🐍', type: 'real', pad: 'dpad', touchHint: 'swipe to turn',
+  id: 'snake', rot: true, name: 'Snake Duel', cat: 'Arcade', icon: '🐍', type: 'real', pad: 'dpad', touchHint: 'swipe to turn',
   desc: 'Eat, grow, don\'t crash.', help: 'Eat fruit to grow. Crash into a wall, yourself or the other snake and you lose. Head-on? Longer snake wins. Reach length 25 to win outright.',
   make(A) {
     const CW = 40, CH = 25, S = 20; const P = [{ b: [[8, 12], [7, 12], [6, 12], [5, 12]], d: [1, 0], Q: dirQueue(), grow: 0 }, { b: [[31, 12], [32, 12], [33, 12], [34, 12]], d: [-1, 0], Q: dirQueue(), grow: 0 }];
@@ -135,7 +135,7 @@ reg({
 
 /* ---------- Tanks ---------- */
 reg({
-  id: 'tanks', name: 'Tank Duel', cat: 'Arcade', icon: '🛡️', type: 'real', pad: 'dpad a', btn: { a: 'Fire' },
+  id: 'tanks', rot: true, name: 'Tank Duel', cat: 'Arcade', icon: '🛡️', type: 'real', pad: 'dpad a', btn: { a: 'Fire' },
   desc: 'Ricochet shots in a maze.', help: 'Keys: up/down drive, left/right rotate, action fires. Touch: drag where you want to go, tap to fire. Shells bounce off walls — and can hit you too! First to 5.',
   make(A) {
     const W = [[150, 100, 20, 130], [630, 270, 20, 130], [300, 240, 200, 20], [390, 50, 20, 110], [390, 340, 20, 110], [130, 380, 140, 20], [530, 100, 140, 20]];
@@ -229,7 +229,7 @@ reg({
 
 /* ---------- Space Duel ---------- */
 reg({
-  id: 'space', name: 'Star Duel', cat: 'Arcade', icon: '🚀', type: 'real', pad: 'dpad a', btn: { a: 'Fire' },
+  id: 'space', rot: true, name: 'Star Duel', cat: 'Arcade', icon: '🚀', type: 'real', pad: 'dpad a', btn: { a: 'Fire' },
   desc: 'Dogfight around a deadly star.', help: 'Keys: left/right rotate, up thrusts, action fires. Touch: drag to point your ship (push far to thrust), tap to fire. The star pulls you in. Screen edges wrap. First to 5.',
   make(A) {
     const sc = [0, 0], SX = 400, SY = 250; let S, bul, pause = 0, msg = '', t = 0;
@@ -338,7 +338,7 @@ reg({
 
 /* ---------- Bomber ---------- */
 reg({
-  id: 'bomber', name: 'Bomb Duel', cat: 'Arcade', icon: '💣', type: 'real', pad: 'dpad a', btn: { a: 'Bomb' },
+  id: 'bomber', rot: true, name: 'Bomb Duel', cat: 'Arcade', icon: '💣', type: 'real', pad: 'dpad a', btn: { a: 'Bomb' },
   desc: 'Blast blocks, trap your rival.', help: 'Move through the maze and drop bombs. Explosions blow up crates and chain other bombs. Crates may hide power-ups (flame = range, bomb = more bombs). Catch your opponent in a blast! After 60 seconds the walls close in.',
   make(A) {
     const C = 15, R = 11, S = 44, X0 = 70, Y0 = 8; const g = grid2(C, R, 0);
@@ -455,7 +455,7 @@ reg({
 
 /* ---------- Paint Wars ---------- */
 reg({
-  id: 'paint', name: 'Paint Wars', cat: 'Arcade', icon: '🖌️', type: 'real', pad: 'dpad a', btn: { a: 'Splat' },
+  id: 'paint', rot: true, name: 'Paint Wars', cat: 'Arcade', icon: '🖌️', type: 'real', pad: 'dpad a', btn: { a: 'Splat' },
   desc: 'Cover the most ground in 40s.', help: 'Run around to paint tiles your color. Splat paints a big area (4s cooldown). Whoever owns the most tiles when time runs out wins.',
   make(A) {
     const CW = 32, CH = 19, S = 25, Y0 = 25; const g = grid2(CW, CH, -1); let T = 40, t = 0;
@@ -507,7 +507,7 @@ reg({
 
 /* ---------- Coin Grab ---------- */
 reg({
-  id: 'coins', name: 'Coin Rush', cat: 'Arcade', icon: '🪙', type: 'real', pad: 'dpad a', btn: { a: 'Dash' },
+  id: 'coins', rot: true, name: 'Coin Rush', cat: 'Arcade', icon: '🪙', type: 'real', pad: 'dpad a', btn: { a: 'Dash' },
   desc: 'Grab more coins in 30 seconds.', help: 'Collect coins (gold = 1, gems = 3). Dash to get there first — or to shove your rival away. Most points after 30 seconds wins.',
   make(A) {
     const P = [{ x: 200, y: 250, vx: 0, vy: 0, r: 20, im: 1, cd: 0, s: 0 }, { x: 600, y: 250, vx: 0, vy: 0, r: 20, im: 1, cd: 0, s: 0 }], coins = []; let T = 30, sp = 0;
@@ -551,7 +551,7 @@ reg({
 
 /* ---------- Hot Potato ---------- */
 reg({
-  id: 'potato', name: 'Hot Potato', cat: 'Arcade', icon: '🥔', type: 'real', pad: 'dpad',
+  id: 'potato', rot: true, name: 'Hot Potato', cat: 'Arcade', icon: '🥔', type: 'real', pad: 'dpad',
   desc: 'Pass the bomb before it blows.', help: 'One player holds the bomb. Touch your opponent to pass it on. Whoever holds it when the fuse runs out loses the round. The holder is a bit faster. First to 3.',
   make(A) {
     const sc = [0, 0], O = [[400, 250, 42], [200, 130, 28], [600, 370, 28], [200, 370, 28], [600, 130, 28]].map(([x, y, r]) => ({ x, y, r, im: 0, vx: 0, vy: 0 }));
@@ -598,7 +598,7 @@ reg({
 
 /* ---------- King of the Hill ---------- */
 reg({
-  id: 'koth', name: 'King of the Hill', cat: 'Arcade', icon: '👑', type: 'real', pad: 'dpad a', btn: { a: 'Dash' },
+  id: 'koth', rot: true, name: 'King of the Hill', cat: 'Arcade', icon: '👑', type: 'real', pad: 'dpad a', btn: { a: 'Dash' },
   desc: 'Hold the zone alone.', help: 'Stand in the glowing zone ALONE to earn time. Shove your rival out (dash!). The zone moves every few seconds. First to 10 seconds wins.',
   make(A) {
     const P = [{ x: 150, y: 250, vx: 0, vy: 0, r: 22, im: 1, cd: 0 }, { x: 650, y: 250, vx: 0, vy: 0, r: 22, im: 1, cd: 0 }], s = [0, 0]; let z = { x: 400, y: 250, r: 72 }, zt = 7, zx = 400, zy = 250;
@@ -689,7 +689,7 @@ reg({
 
 /* ---------- Brick Battle ---------- */
 reg({
-  id: 'bricks', name: 'Brick Battle', cat: 'Arcade', icon: '🧱', type: 'real', pad: 'ud', touch: 'point',
+  id: 'bricks', rot: true, name: 'Brick Battle', cat: 'Arcade', icon: '🧱', type: 'real', pad: 'ud', touch: 'point',
   desc: 'Pong meets breakout.', help: 'Defend your wall of bricks with your paddle. The ball smashes bricks — once it breaks through your wall and hits the edge, you lose.',
   make(A) {
     const br = []; for (let s = 0; s < 2; s++) for (let col = 0; col < 2; col++) for (let k = 0; k < 10; k++) br.push({ s, x: s ? 760 - col * 26 : 14 + col * 26, y: k * 50 + 2, w: 22, h: 46 });

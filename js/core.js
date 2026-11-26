@@ -290,8 +290,9 @@ const Duo = (() => {
       <div><b class="p2">${esc(n2)}</b>${opp >= 0 ? 'Playing a bot? Arrows and Enter also control you.' : 'Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Action <kbd>Enter</kbd>/<kbd>L</kbd> · Alt <kbd>K</kbd>'}</div>
       <div><b>Anywhere</b>Pause <kbd>Esc</kbd> · Rematch <kbd>Space</kbd></div>`;
   }
+  function leaveGame() { if (history.state && history.state.duo) history.back(); else showMenu(); }
   function showMenu() {
-    phase = 'menu'; inst = null; def = null; party = null; clearTouches();
+    phase = 'menu'; inst = null; def = null; party = null; clearTouches(); wake(false);
     document.body.classList.remove('ingame');
     $('game').hidden = true; $('menu').hidden = false; renderMenu();
   }
@@ -340,13 +341,14 @@ const Duo = (() => {
     }
     function loop(t) {
       raf = active.size ? requestAnimationFrame(loop) : 0;
+      if (isTouch && t - lastT < 30) return;                       // ~30 fps on phones to save battery
       const dt = Math.min(.05, (t - lastT) / 1000 || .016); lastT = t;
       Snd.quiet = true; active.forEach(P => { step(P, dt); paint(P); }); Snd.quiet = false;
     }
     function start(P, el) { el.classList.add('playing'); active.add(P); if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(loop); } }
     function stop(P, el) { el.classList.remove('playing'); active.delete(P); }
     const io = 'IntersectionObserver' in window && isTouch ? new IntersectionObserver(es => es.forEach(e => {
-      const P = cache[e.target.dataset.id]; if (!P) return; e.isIntersecting && active.size < 4 ? start(P, e.target) : stop(P, e.target);
+      const P = cache[e.target.dataset.id]; if (!P) return; e.isIntersecting && active.size < 2 && !document.hidden ? start(P, e.target) : stop(P, e.target);
     }), { threshold: .9 }) : null;
     return {
       mount(el) {
@@ -364,7 +366,8 @@ const Duo = (() => {
     def = GAMES.find(g => g.id === id); if (!def) return;
     if (!keepSession) { session = [0, 0]; round = 0; }
     $('menu').hidden = true; $('game').hidden = false; document.body.classList.add('ingame');
-    newRound(); showIntro();
+    if (!(history.state && history.state.duo)) history.pushState({ duo: 1 }, '');
+    wake(true); newRound(); showIntro();
   }
   function setupBots() {
     const lv = forceBots || [null, opp >= 0 ? opp : null];
@@ -420,8 +423,9 @@ const Duo = (() => {
     return `<div class="how two"><span class="p1"><b>${N[0]}</b>${def.keys ? def.keys[0] : k(0)}</span><span class="p2"><b>${N[1]}</b>${def.keys ? def.keys[1] : k(1)}</span></div>`;
   }
   const vsLine = () => bots[1] ? `<div class="vs-chip">vs Bot · ${LEVELS[bots[1].lvl]}</div>` : '';
+  const turnTip = () => isTouch && !rot && W / H > 1.25 && innerHeight > innerWidth ? `<div class="tip"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="3"/><path d="M20 14a8 8 0 0 1-6 6M17 20h-3v-3"/></svg>Turn your phone sideways for a bigger view</div>` : '';
   function showIntro() {
-    overlay(`<div class="kick">${party ? `Party · ${party.i + 1} of ${party.list.length}` : def.cat}</div><h2>${def.name}</h2>${vsLine()}<p>${def.help}</p>${controlsHtml()}
+    overlay(`<div class="kick">${party ? `Party · ${party.i + 1} of ${party.list.length}` : def.cat}</div><h2>${def.name}</h2>${vsLine()}<p>${def.help}</p>${controlsHtml()}${turnTip()}
       <div class="row"><button class="btn" data-a="start">Play</button><button class="btn ghost" data-a="menu">Back</button></div>`);
   }
   function showPause() {
@@ -457,7 +461,7 @@ const Duo = (() => {
     Snd.init();
     if (a === 'start' || a === 'resume') { hideOverlay(); if (a === 'start' && def.type === 'real') countdown = 1.6; }
     else if (a === 'again' || a === 'restart') { newRound(); hideOverlay(); }
-    else if (a === 'menu') showMenu();
+    else if (a === 'menu') leaveGame();
     else if (a === 'next') { open(party.list[party.i].id, true); }
     else if (a === 'party') startParty();
     else if (a === 'mute') { setMute(!Snd.muted); showPauseRefresh(); }
@@ -468,14 +472,22 @@ const Duo = (() => {
     party = { list: pool.slice(0, 5), i: 0, score: [0, 0] };
     open(party.list[0].id);
   }
+  let lock = null;
+  async function wake(on) {
+    try {
+      if (on && 'wakeLock' in navigator && !document.hidden) { if (!lock) { lock = await navigator.wakeLock.request('screen'); lock.addEventListener('release', () => { lock = null; }); } }
+      else if (!on && lock) { await lock.release(); lock = null; }
+    } catch (e) { lock = null; }
+  }
   function setMute(m) { Snd.muted = m; Store.set('muted', m); $('muteMenu').innerHTML = SPEAKER[m ? 1 : 0]; }
 
   /* ----- layout & coordinates ----- */
   function fit() {
-    const r = stage.getBoundingClientRect(), pad = isTouch ? 0 : 14;
-    const aw = Math.max(50, r.width - pad * 2), ah = Math.max(50, r.height - pad * 2);
+    const r = stage.getBoundingClientRect(), pad = isTouch ? 0 : 14, st = getComputedStyle(stage);
+    const px = (parseFloat(st.paddingLeft) || 0) + (parseFloat(st.paddingRight) || 0), py = (parseFloat(st.paddingTop) || 0) + (parseFloat(st.paddingBottom) || 0);
+    const aw = Math.max(50, r.width - px - pad * 2), ah = Math.max(50, r.height - py - pad * 2);
     const sN = Math.min(aw / W, ah / H), sR = Math.min(aw / H, ah / W);
-    rot = isTouch && sR > sN * 1.12;
+    rot = isTouch && !!def && !!def.rot && sR > sN * 1.12;
     scale = rot ? sR : sN;
     const dpr = Math.min(window.devicePixelRatio || 1, 2), cw = (rot ? H : W) * scale, ch = (rot ? W : H) * scale;
     cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
@@ -670,6 +682,26 @@ const Duo = (() => {
     addEventListener('keyup', e => { const m = KEYS[e.code]; if (m) { const [p, b] = keyTarget(m); Inp.k[p][b] = 0; } });
     addEventListener('blur', () => { Inp.reset(); clearTouches(); });
 
+    /* ---- phone-app behaviour ---- */
+    addEventListener('popstate', () => { if (!$('game').hidden) showMenu(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { Inp.reset(); clearTouches(); if (phase === 'play' && def && def.type === 'real' && A && !A.ended) showPause(); previews.stopAll(); }
+      else if (def) { wake(true); fit(); }
+    });
+    addEventListener('orientationchange', () => setTimeout(() => { if (def) fit(); }, 250));
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      const hadSW = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.register('sw.js').catch(() => { });
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSW && phase === 'menu') location.reload(); });
+    }
+    const standalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
+    let deferred = null;
+    addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('installBtn').hidden = false; });
+    $('installBtn').onclick = async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice.catch(() => { }); deferred = null; $('installBtn').hidden = true; };
+    addEventListener('appinstalled', () => { $('installBtn').hidden = true; });
+    if (!standalone && /iPhone|iPad|iPod/.test(navigator.userAgent) && !Store.get('iosHint', false)) {
+      $('iosHint').hidden = false; $('iosHint').querySelector('button').onclick = () => { $('iosHint').hidden = true; Store.set('iosHint', true); };
+    }
     stage.addEventListener('pointerdown', onDown);
     stage.addEventListener('pointermove', onMove);
     stage.addEventListener('pointerup', onUp);
@@ -678,6 +710,7 @@ const Duo = (() => {
     addEventListener('resize', () => { if (def) fit(); });
 
     const h = location.hash.slice(1);
+    if (history.state && history.state.duo) history.replaceState(null, '');
     showMenu();
     if (h && GAMES.find(g => g.id === h)) open(h);
     requestAnimationFrame(frame);
