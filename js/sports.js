@@ -4,13 +4,104 @@
 function dir(A, p) { let x = A.get(p, 'r') - A.get(p, 'l'), y = A.get(p, 'd') - A.get(p, 'u'); const m = Math.hypot(x, y) || 1; return [x / m, y / m]; }
 function bigScore(c, A, sc, y = 40, sz = 40) { D.text(c, sc[0], A.W / 2 - 50, y, sz, COL[0]); D.text(c, sc[1], A.W / 2 + 50, y, sz, COL[1]); D.text(c, ':', A.W / 2, y - 3, sz * .7, MUT); }
 function msgFade(c, A, msg, t) { if (t > 0 && msg) { c.globalAlpha = Math.min(1, t * 2); D.text(c, msg, A.W / 2, A.H / 2, 48, ACC); c.globalAlpha = 1; } }
-/* slingshot aim helper used by golf / pool / curling */
-function aimDraw(c, from, drag, col, maxLen) {
-  if (!drag) return; let dx = from.x - drag.x, dy = from.y - drag.y; const L = Math.hypot(dx, dy); if (L < 4) return;
-  const k = Math.min(L, maxLen) / L; dx *= k; dy *= k;
-  c.setLineDash([6, 8]); D.line(c, from.x, from.y, from.x + dx * 1.6, from.y + dy * 1.6, col, 3); c.setLineDash([]);
-  D.rr(c, from.x - 30, from.y + 22, 60, 6, 3, '#0008'); D.rr(c, from.x - 30, from.y + 22, 60 * Math.min(1, L / maxLen), 6, 3, col);
+/* ============================================================
+   Sling: shared pull-back-and-release shot controller.
+   Relative drag (grab anywhere), smoothed aim, power ring, elastic band,
+   guide dots / arc preview, optional cue stick, release burst + trail.
+   ============================================================ */
+function Sling(max = 170) {
+  const S = { on: false, sx: 0, sy: 0, x: 0, y: 0, dx: 0, dy: 0, lvl: 0, fx: [], trail: null, stick: null, last: performance.now() };
+  const raw = () => { let vx = S.sx - S.x, vy = S.sy - S.y; const L = Math.hypot(vx, vy); if (L > max) { vx *= max / L; vy *= max / L; } return [vx, vy, Math.min(L, max)]; };
+  S.power = () => raw()[2] / max;
+  S.down = (x, y) => { S.on = true; S.sx = S.x = x; S.sy = S.y = y; S.dx = S.dy = 0; S.lvl = 0; };
+  S.move = (x, y) => {
+    if (!S.on) return; S.x = x; S.y = y;
+    const l = Math.floor(S.power() * 10); if (l !== S.lvl) { if (l > S.lvl) Snd.tone(220 + l * 48, .03, 'sine', .035); S.lvl = l; }
+  };
+  S.cancel = () => { S.on = false; };
+  /* returns {nx, ny, t} (unit direction + 0..1 power) or null if the pull was too small */
+  S.up = () => {
+    if (!S.on) return null; S.on = false;
+    const [vx, vy, L] = raw(); if (L < 7) return null;
+    const t = L / max;
+    Snd.tone(140 + t * 260, .16, 'triangle', .09, 380 + t * 500); if (t > .6) Snd.noise(.08, .05 + t * .06);
+    if (!Snd.quiet) try { navigator.vibrate && navigator.vibrate(8 + t * 22); } catch (e) { }
+    return { nx: vx / L, ny: vy / L, t };
+  };
+  /* release effects: sparks at `from` flying forward, optional cue-stick strike */
+  S.launch = (from, r, col, withStick) => {
+    for (let i = 0; i < 10 + r.t * 16; i++) { const a = Math.atan2(r.ny, r.nx) + rand(-.7, .7), v = rand(60, 260) * (.4 + r.t); S.fx.push({ x: from.x, y: from.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rand(.25, .5), m: rand(.25, .5), col }); }
+    S.fx.push({ ring: true, x: from.x, y: from.y, life: .35, m: .35, col, R: 14 + r.t * 30 });
+    if (withStick) S.stick = { x: from.x, y: from.y, nx: r.nx, ny: r.ny, d: 14 + r.t * 70, t: 0 };
+  };
+  S.follow = (o, col) => { S.trail = { o, col, pts: [] }; };
+  /* call every frame from the game's draw(); `from` = object being aimed (null when not aiming) */
+  S.draw = (c, from, col, opt = {}) => {
+    const now = performance.now(), dt = Math.min(.05, (now - S.last) / 1000); S.last = now;
+    // trail
+    if (S.trail) {
+      const T = S.trail, o = T.o, sp = Math.hypot(o.vx || 0, o.vy || 0);
+      if (sp > 25 && !o.in && !o.out) T.pts.push([o.x, o.y]); else T.pts.splice(0, 2);
+      if (T.pts.length > 22) T.pts.shift();
+      c.lineCap = 'round';
+      for (let i = 1; i < T.pts.length; i++) { const k = i / T.pts.length; c.globalAlpha = k * .45; D.line(c, ...T.pts[i - 1], ...T.pts[i], T.col, (o.r || 8) * 1.6 * k); }
+      c.globalAlpha = 1; c.lineCap = 'butt';
+      if (!T.pts.length && sp <= 25) S.trail = null;
+    }
+    // particles
+    for (let i = S.fx.length - 1; i >= 0; i--) {
+      const f = S.fx[i]; f.life -= dt; if (f.life <= 0) { S.fx.splice(i, 1); continue; }
+      const k = f.life / f.m;
+      if (f.ring) { D.circ(c, f.x, f.y, f.R * (1.6 - k), null, f.col, 3 * k); continue; }
+      f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= .9; f.vy *= .9; c.globalAlpha = k; D.circ(c, f.x, f.y, 2.5 * k + .5, f.col); c.globalAlpha = 1;
+    }
+    // cue stick strike animation
+    if (S.stick) {
+      const K = S.stick; K.t += dt; const a = Math.min(1, K.t / .07), off = K.d * (1 - a * a) + 13;
+      c.globalAlpha = Math.max(0, 1 - Math.max(0, K.t - .12) / .25);
+      cue(c, K.x, K.y, K.nx, K.ny, off); c.globalAlpha = 1; if (K.t > .4) S.stick = null;
+    }
+    // smoothed aim
+    const [tx, ty] = S.on ? raw() : [0, 0], e = 1 - Math.exp(-dt * 30);
+    S.dx += (tx - S.dx) * e; S.dy += (ty - S.dy) * e;
+    if (!S.on || !from) return;
+    const L = Math.hypot(S.dx, S.dy); if (L < 2) { D.circ(c, from.x, from.y, (from.r || 10) + 10, null, col + '66', 2); return; }
+    const t = L / max, nx = S.dx / L, ny = S.dy / L, r0 = (from.r || 10), full = t > .97, pulse = full ? .5 + Math.sin(now / 60) * .5 : 0;
+    const hot = full ? ACC : col;
+    // elastic band back to the grab point
+    const hx = from.x - S.dx, hy = from.y - S.dy, side = r0 * .9;
+    c.lineCap = 'round'; c.globalAlpha = .75;
+    D.line(c, from.x - ny * side, from.y + nx * side, hx, hy, col, lerp(4, 1.5, t)); D.line(c, from.x + ny * side, from.y - nx * side, hx, hy, col, lerp(4, 1.5, t));
+    c.globalAlpha = 1; D.circ(c, hx, hy, 6, BG, col, 2);
+    if (opt.stick) cue(c, from.x, from.y, nx, ny, 13 + L * .55);
+    // guide
+    if (opt.arc) {
+      const v = opt.arc.speed * t, g = opt.arc.g, w = opt.arc.wind || 0;
+      for (let k = 1; k <= 16; k++) { const s = k * .045, x = from.x + nx * v * s + .5 * w * s * s, y = from.y + ny * v * s + .5 * g * s * s; c.globalAlpha = (1 - k / 17) * .9; D.circ(c, x, y, 3.2 - k * .12, hot); }
+      c.globalAlpha = 1;
+    } else {
+      const len = (opt.reach || 260) * t, n = Math.max(2, Math.floor(len / 16));
+      for (let k = 1; k <= n; k++) { const d = r0 + 10 + k * 16; c.globalAlpha = (1 - k / (n + 1)) * .85; D.circ(c, from.x + nx * d, from.y + ny * d, 2.6, hot); }
+      c.globalAlpha = 1;
+      // arrowhead at the end of the guide
+      const d = r0 + 14 + n * 16, ax = from.x + nx * d, ay = from.y + ny * d;
+      D.poly(c, [[ax + nx * 10, ay + ny * 10], [ax - ny * 7, ay + nx * 7], [ax + ny * 7, ay - nx * 7]], hot);
+    }
+    // power ring
+    const R = r0 + 9 + pulse * 2;
+    D.circ(c, from.x, from.y, R, null, '#ffffff22', 4);
+    c.beginPath(); c.arc(from.x, from.y, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * t); c.strokeStyle = hot; c.lineWidth = 4; c.stroke();
+    c.lineCap = 'butt';
+  };
+  function cue(c, x, y, nx, ny, off) {
+    const sx = x - nx * off, sy = y - ny * off, ex = sx - nx * 300, ey = sy - ny * 300;
+    c.lineCap = 'round'; D.line(c, sx, sy, ex, ey, '#00000055', 9);
+    D.line(c, sx, sy, ex, ey, '#c89b63', 7); D.line(c, sx - nx * 200, sy - ny * 200, ex, ey, '#5a3b26', 8); D.line(c, sx, sy, sx - nx * 8, sy - ny * 8, '#e9ecff', 7); c.lineCap = 'butt';
+  }
+  return S;
 }
+/* smooth rolling friction: proportional drag + constant rolling resistance */
+function roll(o, h, k, c0) { const sp = Math.hypot(o.vx, o.vy); if (!sp) return; const ns = Math.max(0, sp - (sp * k + c0) * h); o.vx *= ns / sp; o.vy *= ns / sp; }
 
 /* ---------- Pong ---------- */
 reg({
@@ -280,7 +371,7 @@ reg({
       { tee: [400, 440], hole: [400, 70], walls: [[250, 260, 300, 26]], bumps: [[300, 160, 26], [500, 160, 26], [400, 200, 20]] },
       { tee: [100, 250], hole: [700, 250], walls: [[220, 30, 26, 300], [380, 170, 26, 300], [540, 30, 26, 300]] },
     ];
-    let hi = 0, H, balls, total = [0, 0], strokes, p = A.first, drag = null, moving = false;
+    let hi = 0, H, balls, total = [0, 0], strokes, p = A.first, moving = false; const sl = Sling(170);
     const load = () => { H = HOLES[hi]; balls = [0, 1].map(q => ({ x: H.tee[0] + (q ? 10 : -10), y: H.tee[1], vx: 0, vy: 0, r: 9, in: false })); strokes = [0, 0]; p = (A.first + hi) % 2; A.turn(p); };
     load();
     const nextTurn = () => {
@@ -293,24 +384,24 @@ reg({
       A.turn(p);
     };
     return {
-      down(x, y) { if (moving) return; drag = { x, y }; },
-      move(x, y) { if (drag) { drag.x = x; drag.y = y; } },
+      down(x, y) { if (!moving) sl.down(x, y); },
+      move(x, y) { sl.move(x, y); }, cancel() { sl.cancel(); },
       up() {
-        if (!drag || moving) return; const b = balls[p]; let dx = b.x - drag.x, dy = b.y - drag.y; const L = Math.hypot(dx, dy); drag = null;
-        if (L < 8) return; const pw = Math.min(L, 170) / 170 * 900; b.vx = dx / L * pw; b.vy = dy / L * pw; moving = true; strokes[p]++; A.sfx('hit');
+        if (moving) return sl.cancel(); const r = sl.up(); if (!r) return; const b = balls[p], pw = 980 * Math.pow(r.t, 1.35);
+        b.vx = r.nx * pw; b.vy = r.ny * pw; moving = true; strokes[p]++; sl.launch(b, r, COL[p]); sl.follow(b, '#ffffff'); A.sfx('hit');
       },
       update(dt) {
         if (!moving) return; const b = balls[p], n = 4, h = dt / n;
         for (let s = 0; s < n; s++) {
-          b.x += b.vx * h; b.y += b.vy * h; const f = Math.pow(.42, h); b.vx *= f; b.vy *= f;
+          b.x += b.vx * h; b.y += b.vy * h; roll(b, h, .85, 60);
           if (rectBounce(b, -100, -100, 1000, 120, .8) | rectBounce(b, -100, 480, 1000, 120, .8) | rectBounce(b, -100, -100, 120, 700, .8) | rectBounce(b, 780, -100, 120, 700, .8)) A.sfx('bounce');
           for (const w of H.walls) if (rectBounce(b, ...w, .8)) A.sfx('bounce');
           for (const [x, y, r] of H.bumps || []) if (collide({ x, y, r, im: 0, vx: 0, vy: 0 }, b, 1.1)) A.sfx('bounce');
           const sp = Math.hypot(b.vx, b.vy), dh = dist(b.x, b.y, ...H.hole);
-          if (dh < 13 && sp < 520) { b.in = true; b.vx = b.vy = 0; A.sfx('coin'); break; }
+          if (dh < 13 && sp < 520) { b.in = true; b.inAt = performance.now(); b.vx = b.vy = 0; A.sfx('coin'); break; }
           if (dh < 30 && sp < 520) { b.vx += (H.hole[0] - b.x) * 3 * h; b.vy += (H.hole[1] - b.y) * 3 * h; }
         }
-        if (b.in || Math.hypot(b.vx, b.vy) < 9) {
+        if (b.in || Math.hypot(b.vx, b.vy) < 3) {
           b.vx = b.vy = 0; moving = false;
           if (!b.in && strokes[p] >= 8) { b.in = true; strokes[p] = 8; }
           nextTurn();
@@ -322,11 +413,12 @@ reg({
         for (const [x, y, r] of H.bumps || []) D.circ(c, x, y, r, '#c56cf0', '#fff4', 3);
         D.circ(c, ...H.hole, 13, '#111'); D.line(c, H.hole[0], H.hole[1], H.hole[0], H.hole[1] - 50, '#ddd', 3); D.poly(c, [[H.hole[0], H.hole[1] - 50], [H.hole[0] + 26, H.hole[1] - 42], [H.hole[0], H.hole[1] - 34]], ACC);
         D.text(c, `Hole ${hi + 1}/${HOLES.length}`, 400, 40, 18, '#fff');
+        const aiming = !A.ended && !moving; sl.draw(c, aiming ? balls[p] : null, COL[p], { reach: 240 });
         for (let q = 0; q < 2; q++) {
           D.text(c, `${A.names[q]}: ${total[q] + strokes[q]} (${strokes[q]} this hole)`, q ? 760 : 40, 40, 15, COL[q], q ? 'right' : 'left');
-          const b = balls[q]; if (b.in) continue; c.globalAlpha = q === p ? 1 : .5; D.circ(c, b.x, b.y + 2, b.r, '#0005'); D.circ(c, b.x, b.y, b.r, '#fff', COL[q], 4); c.globalAlpha = 1;
+          const b = balls[q]; if (b.in) { const k = 1 - (performance.now() - (b.inAt || 0)) / 350; if (k > 0) D.circ(c, lerp(H.hole[0], b.x, k), lerp(H.hole[1], b.y, k), b.r * k, '#fff'); continue; } c.globalAlpha = q === p ? 1 : .5; D.circ(c, b.x, b.y + 2, b.r, '#0005'); D.circ(c, b.x, b.y, b.r, '#fff', COL[q], 4); c.globalAlpha = 1;
         }
-        if (!A.ended && !moving) { aimDraw(c, balls[p], drag, COL[p], 170); if (!drag) D.circ(c, balls[p].x, balls[p].y, 20 + Math.sin(performance.now() / 200) * 3, null, COL[p], 2); }
+        if (aiming && !sl.on) D.circ(c, balls[p].x, balls[p].y, 20 + Math.sin(performance.now() / 200) * 3, null, COL[p], 2);
       }
     };
   }
@@ -426,15 +518,15 @@ reg({
   id: 'curling', name: 'Curling', cat: 'Sports', icon: '🥌', type: 'turn',
   desc: 'Slide stones closest to the button.', help: 'Drag back from your stone and release to slide it. 4 stones each, alternating. Knock opponents out! After all 8, the player with the stone closest to the center scores a point for every stone closer than the opponent\'s best.',
   make(A) {
-    const HX = 640, HY = 250, stones = []; let p = A.first, thrown = [0, 0], cur = null, drag = null, moving = false, res = null; A.turn(p);
+    const HX = 640, HY = 250, stones = []; let p = A.first, thrown = [0, 0], cur = null, moving = false, res = null; const sl = Sling(160); A.turn(p);
     const spawn = () => { cur = { x: 90, y: 250, vx: 0, vy: 0, r: 14, im: 1, p }; stones.push(cur); };
     spawn();
     return {
-      down(x, y) { if (!moving && cur) drag = { x, y }; },
-      move(x, y) { if (drag) { drag.x = x; drag.y = y; } },
+      down(x, y) { if (!moving && cur) sl.down(x, y); },
+      move(x, y) { sl.move(x, y); }, cancel() { sl.cancel(); },
       up() {
-        if (!drag || moving || !cur) return; let dx = cur.x - drag.x, dy = cur.y - drag.y; const L = Math.hypot(dx, dy); drag = null; if (L < 8) return;
-        const pw = Math.min(L, 160) / 160 * 400; cur.vx = dx / L * pw; cur.vy = dy / L * pw; moving = true; thrown[p]++; A.sfx('hit');
+        if (moving || !cur) return sl.cancel(); const r = sl.up(); if (!r) return;
+        const pw = 400 * Math.pow(r.t, 1.1); cur.vx = r.nx * pw; cur.vy = r.ny * pw; moving = true; thrown[p]++; sl.launch(cur, r, COL[p]); sl.follow(cur, COL[p]); A.sfx('hit');
       },
       update(dt) {
         if (!moving) return; const n = 4, h = dt / n;
@@ -458,9 +550,9 @@ reg({
         D.rr(c, 10, 30, 780, 440, 12, '#e6f0fb');
         [[95, '#3ec5ff55'], [65, '#fff'], [38, '#ff4f6d55'], [12, '#fff']].forEach(([r, f]) => D.circ(c, HX, HY, r, f, '#0002', 1));
         D.line(c, 160, 30, 160, 470, '#ff4f6d55', 3); D.line(c, HX, 30, HX, 470, '#0002', 1); D.line(c, 10, HY, 790, HY, '#0002', 1);
+        sl.draw(c, cur && !moving && !A.ended ? cur : null, COL[p], { reach: 300 });
         for (const st of stones) { D.circ(c, st.x, st.y + 2, st.r, '#0003'); D.circ(c, st.x, st.y, st.r, '#9aa0b8'); D.circ(c, st.x, st.y, st.r * .62, COL[st.p]); }
         for (let q = 0; q < 2; q++) D.text(c, `${A.names[q]}: ${'●'.repeat(4 - thrown[q])}`, q ? 760 : 40, 16, 15, COL[q], q ? 'right' : 'left');
-        if (cur && !moving && !A.ended) aimDraw(c, cur, drag, COL[p], 160);
       }
     };
   }
@@ -525,15 +617,15 @@ reg({
     const cue = { x: 220, y: 250, vx: 0, vy: 0, r: 11, im: 1, c: -1 }, balls = [cue], pot = [0, 0];
     const order = [0, 1, 1, 0, 0, 1, 1, 0, 1, 0]; let n = 0;
     for (let row = 0; row < 4; row++) for (let i = 0; i <= row; i++) balls.push({ x: 540 + row * 20, y: 250 + (i - row / 2) * 23, vx: 0, vy: 0, r: 11, im: 1, c: order[n++] });
-    let p = A.first, drag = null, moving = false, potted = [], msg = ''; A.turn(p);
+    let p = A.first, moving = false, potted = [], msg = ''; const sl = Sling(170); A.turn(p);
     return {
-      down(x, y) { if (!moving) drag = { x, y }; },
-      move(x, y) { if (drag) { drag.x = x; drag.y = y; } },
-      up() { if (!drag || moving) return; let dx = cue.x - drag.x, dy = cue.y - drag.y; const Ln = Math.hypot(dx, dy); drag = null; if (Ln < 8) return; const pw = Math.min(Ln, 170) / 170 * 1100; cue.vx = dx / Ln * pw; cue.vy = dy / Ln * pw; moving = true; potted = []; msg = ''; A.sfx('hit'); },
+      down(x, y) { if (!moving) sl.down(x, y); },
+      move(x, y) { sl.move(x, y); }, cancel() { sl.cancel(); },
+      up() { if (moving) return sl.cancel(); const r = sl.up(); if (!r) return; const pw = 1250 * Math.pow(r.t, 1.25); cue.vx = r.nx * pw; cue.vy = r.ny * pw; moving = true; potted = []; msg = ''; sl.launch(cue, r, '#ffffff', true); sl.follow(cue, '#ffffff'); A.sfx('hit'); },
       update(dt) {
         if (!moving) return; const n = 6, h = dt / n;
         for (let s = 0; s < n; s++) {
-          for (const b of balls) { b.x += b.vx * h; b.y += b.vy * h; const f = Math.pow(.5, h); b.vx *= f; b.vy *= f; }
+          for (const b of balls) { b.x += b.vx * h; b.y += b.vy * h; roll(b, h, .55, 38); }
           for (let i = 0; i < balls.length; i++) for (let j = i + 1; j < balls.length; j++) if (collide(balls[i], balls[j], .95) && s === 0) A.sfx('tick');
           for (let i = balls.length - 1; i >= 0; i--) {
             const b = balls[i];
@@ -543,7 +635,7 @@ reg({
             if (b.y < T + b.r) { b.y = T + b.r; b.vy = Math.abs(b.vy) * .8; } if (b.y > B - b.r) { b.y = B - b.r; b.vy = -Math.abs(b.vy) * .8; }
           }
         }
-        if (balls.every(b => Math.hypot(b.vx, b.vy) < 5)) {
+        if (balls.every(b => Math.hypot(b.vx, b.vy) < 2)) {
           balls.forEach(b => b.vx = b.vy = 0); moving = false;
           potted.forEach(c => { if (c >= 0) pot[c]++; });
           if (pot[0] >= 5 || pot[1] >= 5) return A.end(pot[0] >= 5 ? 0 : 1, `${pot[0]} – ${pot[1]}`);
@@ -559,7 +651,7 @@ reg({
         for (const b of balls) if (!b.out) { D.circ(c, b.x, b.y + 2, b.r, '#0005'); D.circ(c, b.x, b.y, b.r, b.c < 0 ? '#f5f5f5' : COL[b.c]); D.circ(c, b.x - 3, b.y - 3, 3, '#fff8'); }
         for (let q = 0; q < 2; q++) { D.text(c, `${A.names[q]}`, q ? 740 : 60, 15, 15, COL[q], q ? 'right' : 'left'); for (let i = 0; i < 5; i++) D.circ(c, (q ? 740 - 80 : 60 + 80) + (q ? -1 : 1) * i * 18, 15, 7, i < pot[q] ? COL[q] : LINE); }
         D.text(c, msg || (A.ended ? '' : `${A.names[p]}'s shot`), 400, 486, 16, msg ? ACC : COL[p]);
-        if (!moving && !A.ended) aimDraw(c, cue, drag, COL[p], 170);
+        sl.draw(c, !moving && !A.ended ? cue : null, COL[p], { reach: 420, stick: true });
       }
     };
   }

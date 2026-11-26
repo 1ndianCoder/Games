@@ -218,7 +218,7 @@ const Duo = (() => {
         P.roll = rand(.25, .6);
         for (const h of P.held) { for (const b of BTN) h[b] = 0; const d = pick(['u', 'd', 'l', 'r', 'u', 'r', null]); if (d) h[d] = 1; if (rand() < .35) h[pick(['u', 'd', 'l', 'r'])] = 1; h.a = rand() < .3 ? 1 : 0; }
       }
-      if (g.type === 'turn') { P.tap -= dt; if (P.tap <= 0) { P.tap = rand(.35, .7); const x = rand(A2.W), y = rand(A2.H * .12, A2.H); P.moves++; try { I.move && I.move(x, y); I.down && I.down(x, y); I.up && I.up(x, y); } catch (e) { } } }
+      if (g.type === 'turn') { P.tap -= dt; if (P.tap <= 0) { P.tap = rand(.35, .7); const x = rand(A2.W), y = rand(A2.H * .12, A2.H); P.moves++; const x2 = x + rand(-160, 160), y2 = y + rand(-160, 160); try { I.move && I.move(x, y); I.down && I.down(x, y); I.move && I.move(x2, y2); I.up && I.up(x2, y2); } catch (e) { } } }
       try { I.update && I.update(dt); } catch (e) { }
     }
     function paint(P) {
@@ -445,6 +445,7 @@ const Duo = (() => {
     cv.addEventListener('pointerdown', e => { Snd.init(); if (phase !== 'play' || !inst || A.ended || countdown > 0) return; cv.setPointerCapture(e.pointerId); const [x, y] = toLocal(e); inst.down && inst.down(x, y); });
     cv.addEventListener('pointermove', e => { if (phase !== 'play' || !inst || A.ended) return; const [x, y] = toLocal(e); inst.move && inst.move(x, y); });
     cv.addEventListener('pointerup', e => { if (phase !== 'play' || !inst || A.ended) return; const [x, y] = toLocal(e); inst.up && inst.up(x, y); });
+    cv.addEventListener('pointercancel', () => { if (inst && inst.cancel) inst.cancel(); });
     addEventListener('resize', () => { if (def) fit(); });
 
     const h = location.hash.slice(1);

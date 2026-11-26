@@ -488,14 +488,14 @@ reg({
   make(A) {
     const hgt = new Float32Array(801), a1 = rand(6), a2 = rand(6);
     for (let x = 0; x <= 800; x++) hgt[x] = 340 + Math.sin(x / 130 + a1) * 50 + Math.sin(x / 47 + a2) * 18 - Math.exp(-((x - 400) ** 2) / 12000) * 120;
-    const T = [{ x: 90 }, { x: 710 }]; let p = A.first, drag = null, shell = null, wind = rand(-70, 70), boom = null, trail = []; A.turn(p);
+    const T = [{ x: 90 }, { x: 710 }], sl = Sling(180); let p = A.first, shell = null, wind = rand(-70, 70), boom = null, trail = []; A.turn(p);
     const ty = q => hgt[Math.round(T[q].x)] - 10;
     return {
-      down(x, y) { if (!shell) drag = { x, y }; },
-      move(x, y) { if (drag) { drag.x = x; drag.y = y; } },
+      down(x, y) { if (!shell) sl.down(x, y); },
+      move(x, y) { sl.move(x, y); }, cancel() { sl.cancel(); },
       up() {
-        if (!drag || shell) return; const ox = T[p].x, oy = ty(p) - 8; let dx = ox - drag.x, dy = oy - drag.y; const L = Math.hypot(dx, dy); drag = null; if (L < 10) return;
-        const pw = Math.min(L, 180) / 180 * 620; shell = { x: ox, y: oy, vx: dx / L * pw, vy: dy / L * pw, age: 0 }; trail = []; A.sfx('shoot');
+        if (shell) return sl.cancel(); const r = sl.up(); if (!r) return; const ox = T[p].x, oy = ty(p) - 8, pw = 620 * r.t;
+        shell = { x: ox, y: oy, vx: r.nx * pw, vy: r.ny * pw, age: 0, r: 5 }; trail = []; sl.launch(shell, r, COL[p]); A.sfx('shoot'); A.shake(3);
       },
       update(dt) {
         if (boom) { boom.t -= dt; if (boom.t <= 0) boom = null; }
@@ -523,7 +523,7 @@ reg({
         if (trail.length) { c.globalAlpha = .4; trail.forEach(([x, y], i) => i % 3 || D.circ(c, x, y, 1.5, '#fff')); c.globalAlpha = 1; }
         if (shell) D.circ(c, shell.x, shell.y, 5, '#fff');
         if (boom) D.circ(c, boom.x, boom.y, 40 * (1 - boom.t), '#ffb34799');
-        if (!shell && !A.ended) { D.text(c, `${A.names[p]}'s shot`, T[p].x, ty(p) - 40, 14, COL[p]); aimDraw(c, { x: T[p].x, y: ty(p) - 8 }, drag, COL[p], 180); }
+        if (!shell && !A.ended) { D.text(c, `${A.names[p]}'s shot`, T[p].x, ty(p) - 40, 14, COL[p]); } sl.draw(c, !shell && !A.ended ? { x: T[p].x, y: ty(p) - 8, r: 10 } : null, COL[p], { arc: { speed: 620, g: 320 } });
       }
     };
   }
