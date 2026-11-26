@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0e0f1a">
+<title>Duo Arcade</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- MENU -->
+<section id="menu">
+  <header class="top">
+    <div class="logo"><span class="p1">DU</span><span class="p2">O</span> <small>arcade</small></div>
+    <div class="players">
+      <input id="n1" class="name p1" maxlength="10" aria-label="Player 1 name">
+      <span class="vs">vs</span>
+      <input id="n2" class="name p2" maxlength="10" aria-label="Player 2 name">
+    </div>
+  </header>
+  <div class="hero">
+    <button id="partyBtn" class="big">🎉 Party Mode <small>5 random games</small></button>
+    <button id="randomBtn" class="big alt">🎲 Random Game</button>
+  </div>
+  <nav id="cats"></nav>
+  <input id="search" placeholder="Search games…" autocomplete="off">
+  <div id="grid"></div>
+  <footer id="foot"></footer>
+</section>
+
+<!-- GAME -->
+<section id="game" hidden>
+  <header class="bar">
+    <button id="backBtn" class="icon" title="Menu (Esc)">←</button>
+    <div id="gTitle"></div>
+    <div id="score"><span class="s1"><b id="sn1"></b> <i id="ss1">0</i></span><span class="colon">:</span><span class="s2"><i id="ss2">0</i> <b id="sn2"></b></span></div>
+    <div class="tools">
+      <button id="restartBtn" class="icon" title="Restart round">↻</button>
+      <button id="helpBtn" class="icon" title="How to play">?</button>
+      <button id="muteBtn" class="icon" title="Sound">🔊</button>
+    </div>
+  </header>
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="pads"></div>
+    <div id="overlay" hidden></div>
+  </div>
+</section>
+
+<script src="js/core.js"></script>
+<script src="js/board.js"></script>
+<script src="js/party.js"></script>
+<script src="js/sports.js"></script>
+<script src="js/arcade.js"></script>
+<script>Duo.boot();</script>
+</body>
+</html>
